@@ -54,27 +54,29 @@ func main() {
 
 		switch update.Message.Text {
 		case "":
-			if update.Message.Text != nil {
+			if update.Message.Location != nil {
 				weather, _ := MakeRequest(update.Message.Text)
-				fmt.Printf("message: %s\n", weather)
+				update.Message.Text = Markdown(*weather)
+				fmt.Printf("message: %v\n", weather)
 			}
-
 			if _, err := bot.Send(msg); err != nil {
 				log.Panic(err)
 			}
 
 		}
-
-		port := os.Getenv("PORT")
-		if port == "" {
-			port = "8080"
-		}
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
-
 	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
+
 }
 
-func MakeRequest(location Location) (*List, error) {
+func MakeRequest(_ string) (*List, error) {
+
+	var loc Location
 
 	cfg, err := Init()
 	if err != nil {
@@ -83,8 +85,8 @@ func MakeRequest(location Location) (*List, error) {
 
 	r := url.Values{}
 	r.Add("appid", cfg.AppId)
-	r.Add("lat", fmt.Sprint(location.Lat))
-	r.Add("lon", fmt.Sprint(location.Lon))
+	r.Add("lat", fmt.Sprint(loc.Lat))
+	r.Add("lon", fmt.Sprint(loc.Lon))
 
 	resp, err := http.Get(cfg.WeatherApiHost)
 	if err != nil {
@@ -109,8 +111,15 @@ func MakeRequest(location Location) (*List, error) {
 
 func Markdown(list List) string {
 	var reply strings.Builder
-	fmt.Fprintf(&reply, "<b>%s</b>: <b>%.2fdegC<b>\n", list.Weather.Main, list.Main.Temp)
-	fmt.Fprintf(&reply, "Feels like <b>%.2fdegC<b>. %s\n", list.Main.Temp, strings.ToTitle(list.Weather.Description))
+	_, err := fmt.Fprintf(&reply, "<b>%s</b>: <b>%.2fdegC<b>\n", list.Weather.Main, list.Main.Temp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	wet, err := fmt.Fprintf(&reply, "Feels like <b>%.2fdegC<b>. %s\n", list.Main.Temp, strings.ToTitle(list.Weather.Description))
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println(wet)
 
 	return reply.String()
 }
