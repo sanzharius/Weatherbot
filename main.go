@@ -5,26 +5,13 @@ import (
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
+	"strings"
 	"time"
 )
-
-var numericKeyboard = tgbotapi.NewReplyKeyboard(
-	tgbotapi.NewKeyboardButtonRow(
-		tgbotapi.NewKeyboardButton("/🇺🇸 US"),
-		tgbotapi.NewKeyboardButton("/🇬🇧 GB"),
-	),
-	tgbotapi.NewKeyboardButtonRow(
-		tgbotapi.NewKeyboardButton("/🇩🇪 DE"),
-		tgbotapi.NewKeyboardButton("/🇯🇵 JP"),
-	),
-)
-
-var countrycode = map[string]string{"US": "US", "GB": "GB", "DE": "DE", "JP": "JP"}
 
 func main() {
 
@@ -66,105 +53,64 @@ func main() {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 
 		switch update.Message.Text {
-		case "/start":
-			msg.ReplyMarkup = numericKeyboard
-		case "/close":
-			msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
-		}
-		if _, err := bot.Send(msg); err != nil {
-			log.Panic(err)
-		}
+		case "":
+			if update.Message.Text != nil {
+				weather, _ := MakeRequest(update.Message.Text)
+				fmt.Printf("message: %s\n", weather)
+			}
 
-		txt := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("No holidays today in %s", update.Message.Text))
-		txt2 := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Holidays celebrated in %s today are:", update.Message.Text))
-
-		switch update.Message.Text {
-		case numericKeyboard.Keyboard[0][0].Text:
-			holidays, _ := MakeRequest(update.Message.Text)
-			log.Printf("message: %s\n", holidays)
-			if _, err := bot.Send(txt2); err != nil {
+			if _, err := bot.Send(msg); err != nil {
 				log.Panic(err)
-			} else if len(holidays) == 0 {
-				log.Printf("message: %s\n", update.Message.Text)
-				if _, err := bot.Send(txt); err != nil {
-					log.Panic(err)
-				}
-			}
-		case numericKeyboard.Keyboard[0][1].Text:
-			holidays, _ := MakeRequest(update.Message.Text)
-			log.Printf("message: %s\n", holidays)
-			if _, err := bot.Send(txt2); err != nil {
-				log.Panic(err)
-			} else if len(holidays) == 0 {
-				log.Printf("message: %s\n", update.Message.Text)
-				if _, err := bot.Send(txt); err != nil {
-					log.Panic(err)
-				}
-			}
-		case numericKeyboard.Keyboard[1][0].Text:
-			holidays, _ := MakeRequest(update.Message.Text)
-			log.Printf("message: %s\n", holidays)
-			if _, err := bot.Send(txt2); err != nil {
-				log.Panic(err)
-			} else if len(holidays) == 0 {
-				log.Printf("message: %s\n", update.Message.Text)
-				if _, err := bot.Send(txt); err != nil {
-					log.Panic(err)
-				}
-			}
-		case numericKeyboard.Keyboard[1][1].Text:
-			holidays, _ := MakeRequest(update.Message.Text)
-			log.Printf("message: %s\n", holidays)
-			if _, err := bot.Send(txt2); err != nil {
-				log.Panic(err)
-			} else if len(holidays) == 0 {
-				log.Printf("message: %s\n", update.Message.Text)
-				if _, err := bot.Send(txt); err != nil {
-					log.Panic(err)
-				}
 			}
 
 		}
+
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+		}
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
+
 	}
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
-
 }
 
-func MakeRequest(country string) ([]Holiday, error) {
+func MakeRequest(location Location) (*List, error) {
+
 	cfg, err := Init()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	year, month, day := time.Now().Date()
 	r := url.Values{}
-	r.Add("country", countrycode[country])
-	r.Add("api_key", cfg.HolidayApiKey)
-	r.Add("day", strconv.Itoa(day))
-	r.Add("month", strconv.Itoa(int(month)))
-	r.Add("year", strconv.Itoa(year))
+	r.Add("appid", cfg.AppId)
+	r.Add("lat", fmt.Sprint(location.Lat))
+	r.Add("lon", fmt.Sprint(location.Lon))
 
-	resp, err := http.Get(cfg.HolidayApiHost)
+	resp, err := http.Get(cfg.WeatherApiHost)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	log.Println(string(body))
 
-	var HolUpdate []Holiday
-	err = json.Unmarshal(body, &HolUpdate)
+	var list List
+	err = json.Unmarshal(body, &list)
 	if err != nil {
-		return nil, fmt.Errorf("сouldn't unmarshall to struct: %w", err)
-	}
-	return HolUpdate, nil
+		return nil, fmt.Errorf("couldn't unmarshal to struct: %w", err)
 
+	}
+	return &list, nil
+
+}
+
+func Markdown(list List) string {
+	var reply strings.Builder
+	fmt.Fprintf(&reply, "<b>%s</b>: <b>%.2fdegC<b>\n", list.Weather.Main, list.Main.Temp)
+	fmt.Fprintf(&reply, "Feels like <b>%.2fdegC<b>. %s\n", list.Main.Temp, strings.ToTitle(list.Weather.Description))
+
+	return reply.String()
 }
