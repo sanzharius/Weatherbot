@@ -1,10 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/caarlos0/env/v6"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
+	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -16,6 +21,7 @@ type config struct {
 }
 
 type List struct {
+	Name    string `json:"name"`
 	Main    Main
 	Weather Weather
 }
@@ -66,5 +72,50 @@ func Init() (*config, error) {
 
 	fmt.Printf("%+v\n", cfg)
 	return &cfg, nil
+
+}
+
+func BuildURL(q interface{}) (Parsed string) {
+	var loc Location
+
+	cfg, err := Init()
+	if err != nil {
+		log.Fatal(err)
+	}
+	URL, _ := url.Parse(cfg.WeatherApiHost)
+
+	r := url.Values{}
+	switch q.(type) {
+	case tgbotapi.Location:
+		r.Add("appid", cfg.AppId)
+		r.Add("lat", fmt.Sprint(loc.Lat))
+		r.Add("lon", fmt.Sprint(loc.Lon))
+	}
+	URL.RawQuery = r.Encode()
+	Parsed = URL.String()
+	return Parsed
+
+}
+
+func HTTPGet(weatherURL string) string {
+	resp, err := http.Get(weatherURL)
+
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	var list List
+	err = json.Unmarshal(body, &list)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(body)
 
 }
