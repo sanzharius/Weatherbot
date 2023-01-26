@@ -21,9 +21,10 @@ type config struct {
 }
 
 type List struct {
-	Name    string `json:"name"`
-	Main    Main
-	Weather Weather
+	Name    string    `json:"name"`
+	Main    Main      `json:"main"`
+	Wind    Wind      `json:"wind"`
+	Weather []Weather `json:"weather"`
 }
 
 type Weather struct {
@@ -40,6 +41,14 @@ type Main struct {
 	TempMax   float64 `json:"temp_max"`
 	Pressure  int     `json:"pressure"`
 	Humidity  int     `json:"humidity"`
+	SeaLevel  int     `json:"sea_level"`
+	GrndLevel int     `json:"grnd_level"`
+}
+
+type Wind struct {
+	Speed float64 `json:"speed"`
+	Deg   int     `json:"deg"`
+	Gust  float64 `json:"gust"`
 }
 
 type Location struct {
@@ -98,6 +107,7 @@ func BuildURL(q interface{}) (Parsed string) {
 }
 
 func HTTPGet(weatherURL string) string {
+
 	resp, err := http.Get(weatherURL)
 
 	defer func() {
@@ -116,6 +126,8 @@ func HTTPGet(weatherURL string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return string(body)
+	log.Printf("%+v\n", list)
+
+	return weatherURL
 
 }
