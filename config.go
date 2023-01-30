@@ -21,10 +21,10 @@ type config struct {
 }
 
 type List struct {
-	Name    string    `json:"name"`
-	Main    Main      `json:"main"`
-	Wind    Wind      `json:"wind"`
-	Weather []Weather `json:"weather"`
+	Name    string     `json:"name"`
+	Main    Main       `json:"main"`
+	Wind    Wind       `json:"wind"`
+	Weather []*Weather `json:"weather"`
 }
 
 type Weather struct {
@@ -41,19 +41,11 @@ type Main struct {
 	TempMax   float64 `json:"temp_max"`
 	Pressure  int     `json:"pressure"`
 	Humidity  int     `json:"humidity"`
-	SeaLevel  int     `json:"sea_level"`
-	GrndLevel int     `json:"grnd_level"`
 }
 
 type Wind struct {
 	Speed float64 `json:"speed"`
 	Deg   int     `json:"deg"`
-	Gust  float64 `json:"gust"`
-}
-
-type Location struct {
-	Lat float64 `json:"lat"`
-	Lon float64 `json:"lon"`
 }
 
 func Init() (*config, error) {
@@ -84,8 +76,7 @@ func Init() (*config, error) {
 
 }
 
-func BuildURL(q interface{}) (Parsed string) {
-	var loc Location
+func BuildURL(loc *tgbotapi.Location) (Parsed string) {
 
 	cfg, err := Init()
 	if err != nil {
@@ -94,21 +85,23 @@ func BuildURL(q interface{}) (Parsed string) {
 	URL, _ := url.Parse(cfg.WeatherApiHost)
 
 	r := url.Values{}
-	switch q.(type) {
-	case tgbotapi.Location:
-		r.Add("appid", cfg.AppId)
-		r.Add("lat", fmt.Sprint(loc.Lat))
-		r.Add("lon", fmt.Sprint(loc.Lon))
-	}
+
+	r.Add("appid", cfg.AppId)
+	r.Add("lat", fmt.Sprint(loc.Latitude))
+	r.Add("lon", fmt.Sprint(loc.Longitude))
+
 	URL.RawQuery = r.Encode()
 	Parsed = URL.String()
 	return Parsed
 
 }
 
-func HTTPGet(weatherURL string) string {
+func HTTPGet(weatherURL string) *List {
 
 	resp, err := http.Get(weatherURL)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	defer func() {
 		err := resp.Body.Close()
@@ -116,6 +109,10 @@ func HTTPGet(weatherURL string) string {
 			log.Fatal(err)
 		}
 	}()
+
+	if resp.StatusCode == http.StatusOK {
+		log.Println("request succeeded: 200 OK")
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -128,6 +125,6 @@ func HTTPGet(weatherURL string) string {
 	}
 	log.Printf("%+v\n", list)
 
-	return weatherURL
+	return &list
 
 }

@@ -5,9 +5,7 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"net/url"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -49,19 +47,15 @@ func main() {
 			continue
 		}
 
-		/*msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)*/
-		q := url.Values{}
-
 		switch update.Message.Text {
 		case "":
 			if update.Message.Location != nil {
-				weather := BuildURL(*update.Message.Location)
-				body := HTTPGet(weather)
+				weather := BuildURL(update.Message.Location)
+				list := HTTPGet(weather)
 
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, body)
-				msg.Text = Markdown(body)
-				q.Add("text", msg.Text)
-				q.Add("parse_mode", "HTML")
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+				msg.Text = Markdown(list)
+				msg.ParseMode = "HTML"
 				if _, err := bot.Send(msg); err != nil {
 					log.Panic(err)
 				}
@@ -77,18 +71,10 @@ func main() {
 	}
 }
 
-func Markdown(_ string) string {
-	var list List
-	var reply strings.Builder
-	_, err := fmt.Fprintf(&reply, "<b>%s</b>: <b>%.2fdegC</b>\n", list.Name, list.Main.Temp)
-	if err != nil {
-		log.Fatal(err)
-	}
-	wet, err := fmt.Fprintf(&reply, "Feels like <b>%.2fdegC</b>. %s\n", list.Main.Temp, list.Weather[0].Description)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println(wet)
+func Markdown(list *List) string {
+	message := "<b>%s</b>: <b>%.2fdegC</b>\n" + "Feels like <b>%.2fdegC</b>. %s\n"
 
-	return reply.String()
+	reply := fmt.Sprintf(message, list.Name, list.Main.Temp, list.Main.Temp, list.Weather[0].Description)
+
+	return reply
 }
