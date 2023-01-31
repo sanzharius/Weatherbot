@@ -89,6 +89,7 @@ func BuildURL(loc *tgbotapi.Location) (Parsed string) {
 	r.Add("appid", cfg.AppId)
 	r.Add("lat", fmt.Sprint(loc.Latitude))
 	r.Add("lon", fmt.Sprint(loc.Longitude))
+	r.Add("units", "metric")
 
 	URL.RawQuery = r.Encode()
 	Parsed = URL.String()

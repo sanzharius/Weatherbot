@@ -46,6 +46,7 @@ func main() {
 		if update.Message == nil {
 			continue
 		}
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 
 		switch update.Message.Text {
 		case "":
@@ -53,22 +54,21 @@ func main() {
 				weather := BuildURL(update.Message.Location)
 				list := HTTPGet(weather)
 
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 				msg.Text = Markdown(list)
 				msg.ParseMode = "HTML"
 				if _, err := bot.Send(msg); err != nil {
 					log.Panic(err)
 				}
 			}
-
-			port := os.Getenv("PORT")
-			if port == "" {
-				port = "8080"
-			}
-			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
-
 		}
 	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
+
 }
 
 func Markdown(list *List) string {
