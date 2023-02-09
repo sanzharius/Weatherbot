@@ -17,14 +17,11 @@ type Config struct {
 
 const errMsg = "parse failed"
 
-func Init() (*Config, error) {
+func NewConfig() (*Config, error) {
 	err := godotenv.Load()
 	if err != nil {
 		return nil, apperrors.WrapNil(errMsg, err)
 	}
-
-	MyToken := os.Getenv("MYTOKEN")
-	fmt.Println(MyToken)
 
 	Port := os.Getenv("PORT")
 	fmt.Println(Port)

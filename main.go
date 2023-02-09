@@ -5,7 +5,6 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"os"
 	"telegrambot/sanzhar/config"
 	"telegrambot/sanzhar/httpclient"
 )
@@ -14,7 +13,7 @@ func main() {
 
 	logger := NewLog
 	log.Println(logger)
-	cfg, err := config.Init()
+	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,24 +38,21 @@ func main() {
 
 		switch update.Message.Location {
 		case update.Message.Location:
-			weather := httpclient.QueryParamsToGetWeather(update.Message.Location)
-			list, err := httpclient.GetWeatherForecast(weather)
-			if err != nil {
-				log.Fatal("unable to parse", err)
-			}
-			msg.Text = Markdown(list)
-			msg.ParseMode = "HTML"
-			if _, err := bot.Send(msg); err != nil {
-				log.Panic(err)
+			if update.Message.Location != nil {
+				list, err := httpclient.GetWeatherForecast(update.Message.Location)
+				if err != nil {
+					log.Fatal("unable to parse", err)
+				}
+				msg.Text = Markdown(list)
+				msg.ParseMode = "HTML"
+				if _, err := bot.Send(msg); err != nil {
+					log.Panic(err)
+				}
 			}
 		}
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", cfg.Port), nil))
 
 }
 

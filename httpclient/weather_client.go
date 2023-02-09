@@ -43,12 +43,15 @@ type Wind struct {
 }
 
 func QueryParamsToGetWeather(loc *tgbotapi.Location) (Parsed string) {
-
-	URL, _ := url.Parse(config.Config{}.WeatherApiHost)
+	cfg, err := config.NewConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	URL, _ := url.Parse(cfg.WeatherApiHost)
 
 	r := url.Values{}
 
-	r.Add("appid", config.Config{}.AppId)
+	r.Add("appid", cfg.AppId)
 	r.Add("lat", fmt.Sprint(loc.Latitude))
 	r.Add("lon", fmt.Sprint(loc.Longitude))
 	r.Add("units", "metric")
@@ -59,8 +62,8 @@ func QueryParamsToGetWeather(loc *tgbotapi.Location) (Parsed string) {
 
 }
 
-func GetWeatherForecast(weatherURL string) (*WeatherResponse, error) {
-
+func GetWeatherForecast(loc *tgbotapi.Location) (*WeatherResponse, error) {
+	weatherURL := QueryParamsToGetWeather(loc)
 	resp, err := http.Get(weatherURL)
 	if err != nil {
 		return nil, apperrors.WrapNil(errMsg, err)
