@@ -5,14 +5,13 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"telegrambot/sanzhar/apperrors"
 	"telegrambot/sanzhar/config"
 	"telegrambot/sanzhar/httpclient"
 )
 
 func main() {
-
-	logger := NewLog
-	log.Println(logger)
+	NewLog()
 	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatal(err)
@@ -41,7 +40,7 @@ func main() {
 			if update.Message.Location != nil {
 				list, err := httpclient.GetWeatherForecast(update.Message.Location)
 				if err != nil {
-					log.Fatal("unable to parse", err)
+					log.Fatal(apperrors.MessageUnmarshallingError.AppendMessage(err))
 				}
 				msg.Text = Markdown(list)
 				msg.ParseMode = "HTML"
@@ -56,7 +55,8 @@ func main() {
 
 }
 
-func Markdown(list *httpclient.WeatherResponse) string {
+func Markdown(list *httpclient.GetWeatherResponse) string {
+
 	message := "<b>%s</b>: <b>%.2fdegC</b>\n" + "Feels like <b>%.2fdegC</b>. %s\n"
 
 	reply := fmt.Sprintf(message, list.Name, list.Main.Temp, list.Main.Temp, list.Weather[0].Description)

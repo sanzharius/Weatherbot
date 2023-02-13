@@ -1,16 +1,36 @@
 package apperrors
 
-import (
-	"fmt"
-)
+import "fmt"
 
-func Wrap(msg string, err error) error {
-	return fmt.Errorf("%s: %w", msg, err)
+type AppError struct {
+	Message string
+	Code    string
 }
 
-func WrapNil(msg string, err error) error {
-	if err == nil {
-		return nil
+var (
+	MessageUnmarshallingError = AppError{
+		Message: "Couldn't unmarshal a response",
+		Code:    "UNMARSHAL_ERR",
 	}
-	return Wrap(msg, err)
+	ConfigReadErr = AppError{
+		Message: "couldn't read config",
+		Code:    "CONFIG_READ_ER",
+	}
+	DataNotFoundErr = AppError{
+		Message: "Cannot get a weather forecast",
+		Code:    "DATA_NOT_FOUND_ERR",
+	}
+	APICallingErr = AppError{
+		Code: "API_CALLING_ERR",
+	}
+)
+
+func (appError *AppError) Error() string {
+	return appError.Code + ": " + appError.Message
+}
+func (appError *AppError) AppendMessage(anyErrs ...interface{}) *AppError {
+	return &AppError{
+		Message: fmt.Sprintf("%v: %v", appError.Message, anyErrs),
+		Code:    appError.Code,
+	}
 }

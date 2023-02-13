@@ -9,32 +9,27 @@ import (
 )
 
 type Config struct {
-	MyToken        string `env:"MYTOKEN"`
+	MyToken        string `env:"TELEGRAM_BOT_TOKEN"`
 	Port           string `env:"PORT"`
 	WeatherApiHost string `env:"WEATHERAPIHOST"`
 	AppId          string `env:"APPID"`
 }
 
-const errMsg = "parse failed"
-
 func NewConfig() (*Config, error) {
 	err := godotenv.Load()
 	if err != nil {
-		return nil, apperrors.WrapNil(errMsg, err)
+		return nil, apperrors.ConfigReadErr.AppendMessage(err)
 	}
 
 	Port := os.Getenv("PORT")
-	fmt.Println(Port)
 
-	WeatherApiHost := os.Getenv("WEATHERAPIHOST")
-	fmt.Println(WeatherApiHost)
+	weatherApiHost := os.Getenv("WEATHERAPIHOST")
 
-	AppId := os.Getenv("APPID")
-	fmt.Println(AppId)
+	fmt.Printf("Port: %s; WeatherApiHost: %s", Port, weatherApiHost)
 
 	Cfg := Config{}
 	if err := env.Parse(&Cfg); err != nil {
-		return nil, apperrors.WrapNil(errMsg, err)
+		return nil, apperrors.ConfigReadErr.AppendMessage(err)
 	}
 
 	fmt.Printf("%+v\n", Cfg)

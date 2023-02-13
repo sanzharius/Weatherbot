@@ -12,9 +12,7 @@ import (
 	"telegrambot/sanzhar/config"
 )
 
-const errMsg = "failed request"
-
-type WeatherResponse struct {
+type GetWeatherResponse struct {
 	Name    string        `json:"name"`
 	Main    *MainForecast `json:"main"`
 	Wind    *Wind         `json:"wind"`
@@ -42,7 +40,7 @@ type Wind struct {
 	Deg   int     `json:"deg"`
 }
 
-func QueryParamsToGetWeather(loc *tgbotapi.Location) (Parsed string) {
+func AppendQueryParamsToGetWeather(loc *tgbotapi.Location) (Parsed string) {
 	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatal(err)
@@ -62,11 +60,11 @@ func QueryParamsToGetWeather(loc *tgbotapi.Location) (Parsed string) {
 
 }
 
-func GetWeatherForecast(loc *tgbotapi.Location) (*WeatherResponse, error) {
-	weatherURL := QueryParamsToGetWeather(loc)
+func GetWeatherForecast(loc *tgbotapi.Location) (*GetWeatherResponse, error) {
+	weatherURL := AppendQueryParamsToGetWeather(loc)
 	resp, err := http.Get(weatherURL)
 	if err != nil {
-		return nil, apperrors.WrapNil(errMsg, err)
+		return nil, apperrors.MessageUnmarshallingError.AppendMessage(err)
 	}
 
 	defer func() {
@@ -79,20 +77,21 @@ func GetWeatherForecast(loc *tgbotapi.Location) (*WeatherResponse, error) {
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		switch resp.StatusCode {
 		case http.StatusNotFound:
-			log.Fatal("error: not found")
+			return nil, apperrors.DataNotFoundErr.AppendMessage(err)
 		default:
-			return nil, apperrors.WrapNil(errMsg, err)
+			errMsg := fmt.Sprintf("Got unknown err, while calling API to get weather forecast. HTTP code: %v", resp.StatusCode)
+			return nil, apperrors.APICallingErr.AppendMessage(errMsg)
 		}
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, apperrors.WrapNil(errMsg, err)
+		return nil, apperrors.MessageUnmarshallingError.AppendMessage(err)
 	}
-	var list WeatherResponse
+	var list GetWeatherResponse
 	err = json.Unmarshal(body, &list)
 	if err != nil {
-		return nil, apperrors.WrapNil(errMsg, err)
+		return nil, apperrors.MessageUnmarshallingError.AppendMessage(err)
 	}
 	log.Printf("%+v\n", list)
 	return &list, nil
