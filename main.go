@@ -19,7 +19,7 @@ func main() {
 	httpClient := httpclient.NewHTTPCLient()
 	weatherClient := httpclient.NewWeatherClient(cfg, httpClient)
 
-	tgBot := bot.NewBot(cfg, weatherClient, log) /*bot.NewBot(cfg, weatherClient, botLogger)*/
+	tgBot := bot.NewBot(cfg, weatherClient, log)
 	tgBot.ReplyingOnMessages()
 
 }
