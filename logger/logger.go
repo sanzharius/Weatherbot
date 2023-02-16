@@ -1,4 +1,4 @@
-package main
+package logger
 
 import (
 	log "github.com/sirupsen/logrus"
@@ -6,7 +6,11 @@ import (
 	"time"
 )
 
-func NewLog() {
+type Log struct {
+	Logger *log.Logger
+}
+
+func NewLog() *Log {
 	log.WithFields(log.Fields{
 		"out":  os.Stderr,
 		"time": time.Now(),
@@ -20,4 +24,6 @@ func NewLog() {
 	}
 
 	log.SetLevel(LogLevel)
+	return &Log{}
+
 }
