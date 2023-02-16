@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	MyToken        string `env:"TELEGRAM_BOT_TOKEN"`
+	TelegramBotTok string `env:"TELEGRAM_BOT_TOKEN"`
 	Port           string `env:"PORT"`
 	WeatherApiHost string `env:"WEATHERAPIHOST"`
 	AppId          string `env:"APPID"`
@@ -21,18 +21,18 @@ func NewConfig() (*Config, error) {
 		return nil, apperrors.ConfigReadErr.AppendMessage(err)
 	}
 
-	Port := os.Getenv("PORT")
+	port := os.Getenv("PORT")
 
 	weatherApiHost := os.Getenv("WEATHERAPIHOST")
 
-	fmt.Printf("Port: %s; WeatherApiHost: %s", Port, weatherApiHost)
+	fmt.Printf("Port: %s; WeatherApiHost: %s", port, weatherApiHost)
 
-	Cfg := Config{}
-	if err := env.Parse(&Cfg); err != nil {
+	cfg := Config{}
+	if err := env.Parse(&cfg); err != nil {
 		return nil, apperrors.ConfigReadErr.AppendMessage(err)
 	}
 
-	fmt.Printf("%+v\n", Cfg)
-	return &Cfg, nil
+	fmt.Printf("%+v\n", cfg)
+	return &cfg, nil
 
 }

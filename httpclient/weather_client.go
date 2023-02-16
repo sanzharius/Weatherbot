@@ -39,29 +39,40 @@ type Wind struct {
 	Speed float64 `json:"speed"`
 	Deg   int     `json:"deg"`
 }
+type WeatherClient struct {
+	config *config.Config
+	http   *http.Client
+}
 
-func AppendQueryParamsToGetWeather(loc *tgbotapi.Location) (Parsed string) {
-	cfg, err := config.NewConfig()
-	if err != nil {
-		log.Fatal(err)
+func NewWeatherClient(config *config.Config, httpClient *http.Client) *WeatherClient {
+	return &WeatherClient{
+		config: config,
+		http:   httpClient,
 	}
-	URL, _ := url.Parse(cfg.WeatherApiHost)
+}
+
+func (weatherClient *WeatherClient) AppendQueryParamsToGetWeather(loc *tgbotapi.Location) (parsed string) {
+
+	URL, err := url.Parse(weatherClient.config.WeatherApiHost)
+	if err != nil {
+		log.Fatal(apperrors.ConfigReadErr.AppendMessage(err))
+	}
 
 	r := url.Values{}
-
-	r.Add("appid", cfg.AppId)
+	r.Add("appid", weatherClient.config.AppId)
 	r.Add("lat", fmt.Sprint(loc.Latitude))
 	r.Add("lon", fmt.Sprint(loc.Longitude))
 	r.Add("units", "metric")
 
 	URL.RawQuery = r.Encode()
-	Parsed = URL.String()
-	return Parsed
+	parsed = URL.String()
+	return parsed
 
 }
 
-func GetWeatherForecast(loc *tgbotapi.Location) (*GetWeatherResponse, error) {
-	weatherURL := AppendQueryParamsToGetWeather(loc)
+func (weatherClient *WeatherClient) GetWeatherForecast(loc *tgbotapi.Location) (*GetWeatherResponse, error) {
+
+	weatherURL := weatherClient.AppendQueryParamsToGetWeather(loc)
 	resp, err := http.Get(weatherURL)
 	if err != nil {
 		return nil, apperrors.MessageUnmarshallingError.AppendMessage(err)
