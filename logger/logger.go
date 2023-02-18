@@ -3,27 +3,18 @@ package logger
 import (
 	log "github.com/sirupsen/logrus"
 	"os"
-	"time"
+	"telegrambot/sanzhar/config"
 )
 
-type Log struct {
-	Logger *log.Logger
-}
-
-func NewLog() *Log {
-	log.WithFields(log.Fields{
-		"out":  os.Stderr,
-		"time": time.Now(),
-	}).Info("A new message received")
+func InitLog(cfg *config.Config) {
 
 	log.SetOutput(os.Stdout)
 	log.SetFormatter(&log.JSONFormatter{})
-	LogLevel, err := log.ParseLevel(os.Getenv("LOGLEVEL"))
+	logLevel, err := log.ParseLevel(cfg.LogLevel)
 	if err != nil {
-		LogLevel = log.InfoLevel
+		logLevel = log.InfoLevel
 	}
 
-	log.SetLevel(LogLevel)
-	return &Log{}
+	log.SetLevel(logLevel)
 
 }

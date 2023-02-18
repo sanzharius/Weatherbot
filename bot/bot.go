@@ -3,64 +3,73 @@ package bot
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"telegrambot/sanzhar/apperrors"
 	"telegrambot/sanzhar/config"
 	"telegrambot/sanzhar/httpclient"
-	"telegrambot/sanzhar/logger"
 )
 
 type Bot struct {
 	cfg           *config.Config
 	weatherClient *httpclient.WeatherClient
-	log           *logger.Log
+	tgClient      *tgbotapi.BotAPI
 }
 
-func NewBot(config *config.Config, weatherClient *httpclient.WeatherClient, log *logger.Log) *Bot {
+func NewBot(config *config.Config, httpClient *http.Client) (*Bot, error) {
+	weatherClient := httpclient.NewWeatherClient(config, httpClient)
+	bot, err := tgbotapi.NewBotAPIWithClient(config.TelegramBotTok, config.TelegramHost, httpClient)
+	if err != nil {
+		return nil, apperrors.MessageUnmarshallingError.AppendMessage(err)
+	}
+	bot.Debug = true
+	log.Printf("Authorized on account %s", bot.Self.UserName)
 	return &Bot{
 		cfg:           config,
 		weatherClient: weatherClient,
-		log:           log,
-	}
+		tgClient:      bot,
+	}, nil
 }
 
 func (bot *Bot) ReplyingOnMessages() {
-	b, err := tgbotapi.NewBotAPI(bot.cfg.TelegramBotTok)
-	if err != nil {
-		bot.log.Logger.Panic(err)
-	}
-	b.Debug = true
-	bot.log.Logger.Printf("Authorized on account %s", b.Self.UserName)
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	u.Timeout = bot.cfg.TelegramMessageTimeoutInSec
 
-	updates := b.GetUpdatesChan(u)
+	updates := bot.tgClient.GetUpdatesChan(u)
 	for update := range updates {
-		if update.Message == nil {
+		msg, err := bot.GetMessageByUpdate(&update)
+		if err != nil {
+			log.Error(err)
 			continue
 		}
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 
-		switch update.Message.Location {
-		case update.Message.Location:
-			if update.Message.Location != nil {
-				list, err := bot.weatherClient.GetWeatherForecast(update.Message.Location)
-				if err != nil {
-					bot.log.Logger.Fatal(apperrors.MessageUnmarshallingError.AppendMessage(err))
-				}
-				msg.Text = Markdown(list)
-				msg.ParseMode = "HTML"
-				if _, err := b.Send(msg); err != nil {
-					bot.log.Logger.Panic(err)
-				}
-			}
+		_, err = bot.tgClient.Send(msg)
+		if err != nil {
+			log.Error(err)
 		}
 	}
-	bot.log.Logger.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", bot.cfg.Port), nil))
-
 }
 
-func Markdown(list *httpclient.GetWeatherResponse) string {
+func (bot *Bot) GetMessageByUpdate(update *tgbotapi.Update) (*tgbotapi.MessageConfig, error) {
+	if update.Message == nil {
+		return nil, nil
+	}
+
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+	if update.Message.Location != nil {
+		getWeatherResponse, err := bot.weatherClient.GetWeatherForecast(update.Message.Location)
+		if err != nil {
+			return nil, apperrors.MessageUnmarshallingError.AppendMessage(err)
+		}
+
+		msg.Text = MapGetWeatherResponseToHTML(getWeatherResponse)
+		msg.ParseMode = "HTML"
+	}
+
+	return &msg, nil
+}
+
+func MapGetWeatherResponseToHTML(list *httpclient.GetWeatherResponse) string {
 
 	message := "<b>%s</b>: <b>%.2fdegC</b>\n" + "Feels like <b>%.2fdegC</b>. %s\n"
 

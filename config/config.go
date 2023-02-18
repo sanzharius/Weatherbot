@@ -9,10 +9,13 @@ import (
 )
 
 type Config struct {
-	TelegramBotTok string `env:"TELEGRAM_BOT_TOKEN"`
-	Port           string `env:"PORT"`
-	WeatherApiHost string `env:"WEATHERAPIHOST"`
-	AppId          string `env:"APPID"`
+	TelegramHost                string `env:"TELEGRAM_HOST"`
+	TelegramBotTok              string `env:"TELEGRAM_BOT_TOKEN"`
+	Port                        string `env:"PORT"`
+	WeatherApiHost              string `env:"WEATHERAPIHOST"`
+	AppId                       string `env:"APPID"`
+	LogLevel                    string `env:"LOGLEVEL"`
+	TelegramMessageTimeoutInSec int    `env:"TELEGRAM_MESSAGE_TIMEOUT_IN_SEC"`
 }
 
 func NewConfig() (*Config, error) {
@@ -22,9 +25,7 @@ func NewConfig() (*Config, error) {
 	}
 
 	port := os.Getenv("PORT")
-
 	weatherApiHost := os.Getenv("WEATHERAPIHOST")
-
 	fmt.Printf("Port: %s; WeatherApiHost: %s", port, weatherApiHost)
 
 	cfg := Config{}

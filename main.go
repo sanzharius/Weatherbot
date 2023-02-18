@@ -1,7 +1,9 @@
 package main
 
 import (
-	tglog "github.com/sirupsen/logrus"
+	"fmt"
+	log "github.com/sirupsen/logrus"
+	"net/http"
 	"telegrambot/sanzhar/bot"
 	"telegrambot/sanzhar/config"
 	"telegrambot/sanzhar/httpclient"
@@ -9,17 +11,19 @@ import (
 )
 
 func main() {
-
-	log := logger.NewLog()
 	cfg, err := config.NewConfig()
 	if err != nil {
-		tglog.Fatal(err)
+		log.Fatal(err)
 	}
 
+	logger.InitLog(cfg)
 	httpClient := httpclient.NewHTTPCLient()
-	weatherClient := httpclient.NewWeatherClient(cfg, httpClient)
 
-	tgBot := bot.NewBot(cfg, weatherClient, log)
+	tgBot, err := bot.NewBot(cfg, httpClient)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	tgBot.ReplyingOnMessages()
-
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", cfg.Port), nil))
 }
