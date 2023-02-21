@@ -18,7 +18,7 @@ type Bot struct {
 
 func NewBot(config *config.Config, httpClient *http.Client) (*Bot, error) {
 	weatherClient := httpclient.NewWeatherClient(config, httpClient)
-	bot, err := tgbotapi.NewBotAPIWithClient(config.TelegramBotTok, config.TelegramHost, httpClient)
+	bot, err := tgbotapi.NewBotAPIWithClient(config.TelegramBotTok, "https://api.telegram.org/bot%s/%s", httpClient)
 	if err != nil {
 		return nil, apperrors.MessageUnmarshallingError.AppendMessage(err)
 	}
