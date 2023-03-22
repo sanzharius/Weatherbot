@@ -41,13 +41,13 @@ type Wind struct {
 }
 type WeatherClient struct {
 	config *config.Config
-	http   *http.Client
+	Http   *http.Client
 }
 
 func NewWeatherClient(config *config.Config, httpClient *http.Client) *WeatherClient {
 	return &WeatherClient{
 		config: config,
-		http:   httpClient,
+		Http:   httpClient,
 	}
 }
 

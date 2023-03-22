@@ -16,5 +16,4 @@ func InitLog(cfg *config.Config) {
 	}
 
 	log.SetLevel(logLevel)
-
 }
