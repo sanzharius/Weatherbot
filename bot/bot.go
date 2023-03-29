@@ -4,7 +4,6 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 	"telegrambot/sanzhar/apperrors"
 	"telegrambot/sanzhar/config"
 	"telegrambot/sanzhar/httpclient"
@@ -16,18 +15,12 @@ type Bot struct {
 	tgClient      *tgbotapi.BotAPI
 }
 
-func NewBot(config *config.Config, httpClient *http.Client) (*Bot, error) {
-	weatherClient := httpclient.NewWeatherClient(config, httpClient)
-	bot, err := tgbotapi.NewBotAPIWithClient(config.TelegramBotTok, "https://api.telegram.org/bot%s/%s", httpClient)
-	if err != nil {
-		return nil, apperrors.MessageUnmarshallingError.AppendMessage(err)
-	}
-	bot.Debug = true
-	log.Printf("Authorized on account %s", bot.Self.UserName)
+func NewBot(config *config.Config, tgClient *tgbotapi.BotAPI, weatherClient *httpclient.WeatherClient) (*Bot, error) {
+	log.Printf("Authorized on account %s", tgClient.Self.UserName)
 	return &Bot{
 		cfg:           config,
 		weatherClient: weatherClient,
-		tgClient:      bot,
+		tgClient:      tgClient,
 	}, nil
 }
 

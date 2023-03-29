@@ -18,8 +18,8 @@ type Config struct {
 	TelegramMessageTimeoutInSec int    `env:"TELEGRAM_MESSAGE_TIMEOUT_IN_SEC"`
 }
 
-func NewConfig() (*Config, error) {
-	err := godotenv.Load()
+func NewConfig(path string) (*Config, error) {
+	err := godotenv.Load(path)
 	if err != nil {
 		return nil, apperrors.ConfigReadErr.AppendMessage(err)
 	}

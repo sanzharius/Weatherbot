@@ -41,13 +41,13 @@ type Wind struct {
 }
 type WeatherClient struct {
 	config *config.Config
-	Http   *http.Client
+	client *http.Client
 }
 
 func NewWeatherClient(config *config.Config, httpClient *http.Client) *WeatherClient {
 	return &WeatherClient{
 		config: config,
-		Http:   httpClient,
+		client: httpClient,
 	}
 }
 
@@ -73,7 +73,7 @@ func (weatherClient *WeatherClient) AppendQueryParamsToGetWeather(loc *tgbotapi.
 func (weatherClient *WeatherClient) GetWeatherForecast(loc *tgbotapi.Location) (*GetWeatherResponse, error) {
 
 	weatherURL := weatherClient.AppendQueryParamsToGetWeather(loc)
-	resp, err := http.Get(weatherURL)
+	resp, err := weatherClient.client.Get(weatherURL)
 	if err != nil {
 		return nil, apperrors.MessageUnmarshallingError.AppendMessage(err)
 	}
