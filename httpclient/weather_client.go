@@ -40,26 +40,26 @@ type Wind struct {
 	Deg   int     `json:"deg"`
 }
 type WeatherClient struct {
-	config *config.Config
+	Config *config.Config
 	client *http.Client
 }
 
 func NewWeatherClient(config *config.Config, httpClient *http.Client) *WeatherClient {
 	return &WeatherClient{
-		config: config,
+		Config: config,
 		client: httpClient,
 	}
 }
 
 func (weatherClient *WeatherClient) AppendQueryParamsToGetWeather(loc *tgbotapi.Location) (parsed string) {
 
-	URL, err := url.Parse(weatherClient.config.WeatherApiHost)
+	URL, err := url.Parse(weatherClient.Config.WeatherApiHost)
 	if err != nil {
 		log.Fatal(apperrors.ConfigReadErr.AppendMessage(err))
 	}
 
 	r := url.Values{}
-	r.Add("appid", weatherClient.config.AppId)
+	r.Add("appid", weatherClient.Config.AppId)
 	r.Add("lat", fmt.Sprint(loc.Latitude))
 	r.Add("lon", fmt.Sprint(loc.Longitude))
 	r.Add("units", "metric")
